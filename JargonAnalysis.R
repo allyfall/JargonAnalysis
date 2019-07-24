@@ -4,20 +4,33 @@
 library(pdftools)
 library(tidyverse)
 library(tidytext)
-#ok, so for this to work, the directory has to be the PDF directory, as opposed to the test directory, where everything else is. 
-#so, how do we fix that? 
+#New problem: this method of reading in abstracts DOES NOT work for all of the pdf abstracts. So I need to find a new method. yay. 
+setwd("~/Desktop/JargonAnalysis-master/JargonAnalysis/Test/PDF")
 files <- list.files(pattern = "pdf$")
 env_papers <- lapply(files, pdf_text)
 length(env_papers)
 
-library(tm) ## the tibble method works!
+library(tm) ## the tibble method only works for one pdf. 
 env_text <- pdf_text(files)
 env_tibble <- tibble(text = env_text)
 env_tidy <- env_tibble %>%
   unnest_tokens(word, text)
 
+#This works for both, but now I have a termdocmatrix, which I'm a little less sure how to use. 
+env_test_tib <- tibble(text = env_papers)
+corp <- Corpus(URISource(files), readerControl = list(reader = readPDF))
+corp <- tm_map(corp, removePunctuation, ucp = TRUE)
+env_tdm <- TermDocumentMatrix(corp,
+                              control=
+                                list(stopwords=TRUE,
+                                     tolower=TRUE,
+                                     stemming = FALSE,
+                                     bounds = list(global = c(1,Inf))))
+inspect(env_tdm)
+
 ###Using blog posts to create general english corpus. Directory must be set to the jargon master, not to test. 
 ##This results in however many xml documents in the folder being read in as a DTM.
+setwd("~/Desktop/JargonAnalysis-master/JargonAnalysis")
 blogposts <- Corpus(DirSource("Test/XML"))
 blogposts <- tm_map(blogposts, removePunctuation)
 blogposts <- tm_map(blogposts, content_transformer(tolower))
@@ -92,10 +105,6 @@ text(tk2[,1], y=tk2[,2], labels=rownames(tk2), cex=.70)
 ###Hi Katie! The section below is what I've been working on/struggling with###
 ##need to do this for the abstracts and sciCorp too. 
 #Ok, lets do this for the abstracts too: 
-source_dir_abs <- "Test/PDF"
-#I'm getting an error that says that text matrix can't run because there is something wrong with the encoding.
-#so I want to convert to UTF8, which takes a text object. However, I need a path for textmatrix...
-source_dir_abs <- enc2utf8(source_dir_abs)
 TDM_abs <- textmatrix(source_dir_abs, stopwords = stopwords_en, stemming = TRUE, removeNumbers = T, minGlobFreq = 2)
 #Maybe I don't need the textmatrix function... What if I can just use the lsa function with a DTM?
 abstracts_cor <- Corpus(DirSource("Test/PDF"))
@@ -107,6 +116,8 @@ absDTM <- DocumentTermMatrix(abstracts_cor)
 #All of the above works, but then the line below throws: Error in  Ops.simple_triplet_matrix((m > 0), 1) : Not implemented.
 TDM2abs <- lw_tf(absDTM) * gw_idf(absDTM)
 LSAabs <- lsa()
+
+
 
 
 ##Flesch-Kincaid: 206.835 - 1.015(totalwords/totalsentences) - 84.6(totalsyllables/totalwords)
