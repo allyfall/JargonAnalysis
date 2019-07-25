@@ -4,19 +4,12 @@
 library(pdftools)
 library(tidyverse)
 library(tidytext)
-#New problem: this method of reading in abstracts DOES NOT work for all of the pdf abstracts. So I need to find a new method. yay. 
+library(tm) 
 setwd("~/Desktop/JargonAnalysis-master/JargonAnalysis/Test/PDF")
 files <- list.files(pattern = "pdf$")
 env_papers <- lapply(files, pdf_text)
 length(env_papers)
-
-library(tm) ## the tibble method only works for one pdf. 
-env_text <- pdf_text(files)
-env_tibble <- tibble(text = env_text)
-env_tidy <- env_tibble %>%
-  unnest_tokens(word, text)
-
-#This works for both, but now I have a termdocmatrix, which I'm a little less sure how to use. 
+#Now I have a termdocmatrix, which I'm a little less sure how to use. 
 env_test_tib <- tibble(text = env_papers)
 corp <- Corpus(URISource(files), readerControl = list(reader = readPDF))
 corp <- tm_map(corp, removePunctuation, ucp = TRUE)
@@ -40,7 +33,7 @@ blogDTM <- DocumentTermMatrix(blogposts)
 #looking at word frequency:
 blog_freq <- colSums(as.matrix(blogDTM))
 #total number of terms:
-length(blog_freq) #14515
+length(blog_freq) 
 #posttm <- readXML(type = "node", spec = "XPathExpression") 
 
 ###Building the Environmental science corpus###
@@ -115,9 +108,18 @@ abstracts_cor <- tm_map(blogposts, stripWhitespace)
 absDTM <- DocumentTermMatrix(abstracts_cor)
 #All of the above works, but then the line below throws: Error in  Ops.simple_triplet_matrix((m > 0), 1) : Not implemented.
 TDM2abs <- lw_tf(absDTM) * gw_idf(absDTM)
-LSAabs <- lsa()
 
-
+##Try three. The abstracts are in as a TDM now.. So maybe that'll work? 
+absDTM2 <- DocumentTermMatrix(corp)
+TDM2abs2 <- lw_tf(absDTM2) * gw_idf(absDTM2) #doesn't work, same error: Error in Ops.simple_triplet_matrix((m > 0), 1) : Not implemented.
+LSAabs <- lsa(absDTM2, dims = dimcalc_share())
+as.textmatrix(LSAabs)
+tk2 <- t(LSAabs$sk *t(LSAabs$tk))
+#can plot dimensions and terms.
+plot(tk2[,1], y=tk2[,2], col="red", cex=.50, main="TK Plot")
+text(tk2[,1], y=tk2[,2], labels=rownames(tk2), cex=.70)
+#Ok, this kind of works, but it isn't what I expected when I plot it. Also, I cannot interpret this at all. So maybe I need to get that 
+#other step to work. 
 
 
 ##Flesch-Kincaid: 206.835 - 1.015(totalwords/totalsentences) - 84.6(totalsyllables/totalwords)

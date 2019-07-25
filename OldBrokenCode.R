@@ -1,3 +1,11 @@
+##to read in the corpus of abstracts. gives bag of words, but only works for a single abstract document. 
+library(tm) ## the tibble method only works for one pdf. So don't run this, it is broken. 
+env_text <- pdf_text(files)
+env_tibble <- tibble(text = env_text)
+env_tidy <- env_tibble %>%
+  unnest_tokens(word, text)
+
+
 ##Trying to read in standard corpus in txt files:
 library(readtext)
 #std_corp <- readtext("wlp_fiction_awq/*")
