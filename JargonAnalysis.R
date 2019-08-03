@@ -13,6 +13,12 @@ length(env_papers)
 env_test_tib <- tibble(text = env_papers)
 corp <- Corpus(URISource(files), readerControl = list(reader = readPDF))
 corp <- tm_map(corp, removePunctuation, ucp = TRUE)
+env_dtm <- DocumentTermMatrix(corp,
+                              control=
+                                list(stopwords=TRUE,
+                                     tolower=TRUE,
+                                     stemming = FALSE,
+                                     bounds = list(global = c(1,Inf))))
 env_tdm <- TermDocumentMatrix(corp,
                               control=
                                 list(stopwords=TRUE,
@@ -72,14 +78,45 @@ ploscontent <- data.frame(sapply(plos,`[`,1)) %>%
 #methods used will be: Jargonness, LSA, lex tightness, Flesch-Kincaid, POS analysis
 ##can also look at word frequency, topic modeling (should do preprosessing for this)
 
-##Jargonness: 1. comparison of word frequency in corpora: count words in science corpora, count in normal
-#make ratio of counts. 
+##Jargonness##
+##step one: make sure science (plos) and general corpora are bag of words: 
+ploswords <- ploscontent$words #56836 words right now #science corp is now bag of words
+generalwords <- blogDTM$dimnames$Terms #51360 words right now #blog/general corp is now bag of words!
+##step two: turn abstracts into bag of words (one bag per abstract)
+#I'll start with only one abstract to test. 
+abs_test <- corp[1] #you just need to change this number to change which abstract you are targeting. (I think...)
+abs_test <- tm_map(abs_test, removeNumbers)
+length(abs_test)
+abs1_jargon <- DocumentTermMatrix(abs_test,
+                              control=
+                                list(stopwords=TRUE,
+                                     tolower=TRUE,
+                                     stemming = FALSE,
+                                     bounds = list(global = c(1,Inf))))
+#note: line above MUST be 1 to inf, not 2 because with stopwords removed, you get 0 words with limit set at 2
+abs1_words <- abs1_jargon$dimnames$Terms #973 words right now for Breakup.pdf
+##step three: remove stopwords from all corpora (done in read in process, stopwords=TRUE)
+##step four: create word frequency tables for both corpora
+#this is already done for the document term matrix of the blogs. It is stored in blog_freq
+plos <- tm_map(plos, removePunctuation)
+plos_dtm <- DocumentTermMatrix(plos,
+                               control=
+                                 list(stopwords=TRUE,
+                                      tolower=TRUE,
+                                      stemming = FALSE,
+                                      bounds = list(global = c(2,Inf))))
+plos_freq <- colSums(as.matrix(plos_dtm))
+##step five: create an empty matrix w/ 4 columns and as many rows as words in abstract
+jargon_matrix <- matrix(,nrow = length(abs1_words), ncol=4)
+##step six: take first word from abstract bag 
+#possibility for better code: use word frequency table for abstract as well, so you don't run the same word over and over..
+
+
 
 ##LSA: latent semantic analysis: 
 library(lsa)
 library(LSAfun)
 #creating the matrixes for the analysis
-#a question: Should I create different matrixes for the env publications and the blog corups, or can it all go in one? 
 #working directory is set to jargonAnalysis-master.
 source_dir <- "Test/XML"
 text_dir <- blogposts #it only wants a path, not an object. So I need to find a way to make this a path.
@@ -93,23 +130,11 @@ as.textmatrix(LSAspace)
 tk2 <- t(LSAspace$sk *t(LSAspace$tk))
 #can plot dimensions and terms.
 plot(tk2[,1], y=tk2[,2], col="red", cex=.50, main="TK Plot")
-text(tk2[,1], y=tk2[,2], labels=rownames(tk2), cex=.70)
+text(tk2[,1], y=tk2[,2], labels=rownames(tk2), cex=.70) #This is a plot of words taken from the blogposts
 
 ###Hi Katie! The section below is what I've been working on/struggling with###
 ##need to do this for the abstracts and sciCorp too. 
-#Ok, lets do this for the abstracts too: 
-TDM_abs <- textmatrix(source_dir_abs, stopwords = stopwords_en, stemming = TRUE, removeNumbers = T, minGlobFreq = 2)
-#Maybe I don't need the textmatrix function... What if I can just use the lsa function with a DTM?
-abstracts_cor <- Corpus(DirSource("Test/PDF"))
-abstracts_cor <- tm_map(blogposts, removePunctuation)
-abstracts_cor <- tm_map(blogposts, content_transformer(tolower))
-abstracts_cor <- tm_map(blogposts, removeNumbers)
-abstracts_cor <- tm_map(blogposts, stripWhitespace)
-absDTM <- DocumentTermMatrix(abstracts_cor)
-#All of the above works, but then the line below throws: Error in  Ops.simple_triplet_matrix((m > 0), 1) : Not implemented.
-TDM2abs <- lw_tf(absDTM) * gw_idf(absDTM)
-
-##Try three. The abstracts are in as a TDM now.. So maybe that'll work? 
+##The abstracts are in as a TDM now. 
 absDTM2 <- DocumentTermMatrix(corp)
 TDM2abs2 <- lw_tf(absDTM2) * gw_idf(absDTM2) #doesn't work, same error: Error in Ops.simple_triplet_matrix((m > 0), 1) : Not implemented.
 LSAabs <- lsa(absDTM2, dims = dimcalc_share())
@@ -117,23 +142,46 @@ as.textmatrix(LSAabs)
 tk2 <- t(LSAabs$sk *t(LSAabs$tk))
 #can plot dimensions and terms.
 plot(tk2[,1], y=tk2[,2], col="red", cex=.50, main="TK Plot")
-text(tk2[,1], y=tk2[,2], labels=rownames(tk2), cex=.70)
+text(tk2[,1], y=tk2[,2], labels=rownames(tk2), cex=.70) #This gives a plot of document names. So it isn't getting the words out of the documents? 
 #Ok, this kind of works, but it isn't what I expected when I plot it. Also, I cannot interpret this at all. So maybe I need to get that 
 #other step to work. 
 
+#Trying LSA on the PLOS corpus
+setwd("~/Desktop/JargonAnalysis-master/JargonAnalysis")
+source_plos <- "ploscorpus/plostest"
+TDM_plos <- textmatrix(source_plos, stopwords = stopwords_en, stemming = TRUE, removeXML = TRUE, removeNumber = T, minGlobFreq=2)
+summary.textmatrix(TDM_plos)
+# creating weighted matrix TDM2 out of the original TDM. TDM2 is the term frequency times its inverse document frequency
+TDM2_plos <- lw_tf(TDM_plos) * gw_idf(TDM_plos) 
+LSAspace_plos <- lsa(TDM2_plos, dims=dimcalc_share())
+as.textmatrix(LSAspace_plos)
+#lsa function above makes TDM2 into three matrices. tk (term matrix), dk (document matrix), and sk (singular val matrix)
+tk2_plos <- t(LSAspace_plos$sk *t(LSAspace_plos$tk))
+#can plot dimensions and terms.
+plot(tk2_plos[,1], y=tk2_plos[,2], col="red", cex=.50, main="TK Plot PLOS Corpus")
+text(tk2_plos[,1], y=tk2_plos[,2], labels=rownames(tk2_plos), cex=.70)
+##Something I need to do a little research on is how to interpret LSA plots. 
 
 ##Flesch-Kincaid: 206.835 - 1.015(totalwords/totalsentences) - 84.6(totalsyllables/totalwords)
-#so I need a corpus of abstracts that is not tidy. It needs punctuation and spaces. 
+#I need a corpus of abstracts that is not tidy. It needs punctuation and spaces. 
 #there is actually a function: readability(txt.file, hyphen = NULL, index = "Flesch")
 library(koRpus)
 library(koRpus.lang.en)
 #install.koRpus.lang(lang = "en") #Think I have this on machine now, so I don't need to run line again.
-#k so the readability function takes .txt files. I want to look at my abstracts only, so maybe I save them as txt files...?
+#the readability function takes .txt files. I want to look at my abstracts only, so maybe I save them as txt files...?
 readability("Test/Ab1.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
 readability("Test/Abs2.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
 readability("Test/Abs3.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
 #need to do this for sciCorp and blogs
+#Need to convert XML into txt files, preferably automatically. This will take some research.
+
 
 ##Lexical Tightness: how inter-related words are in normal vs science language.
 #is a mean of NPMI and is log2(p(a,b)/p(a)p(b))/-log2(p(a,b))
 ##OR Word Association Profiles
+
+
+##Some very standard text analysis on the abstracts: word counts, topic modeling
+#sentiment analysis, bigrams (if possible)
+#start with word counts
+

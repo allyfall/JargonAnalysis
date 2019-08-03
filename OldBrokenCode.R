@@ -53,3 +53,17 @@ blog_tidy <- blog_dataframe %>%
 posts <- xpathApply(blog_corpus, "//post",xmlValue)
 postWords <- lapply(posts,strsplit,"[[:space:]]")
 #postWords <- tibble(postWords)
+
+
+###Trying to do LSA on the pdf abstracts:
+#Ok, lets do this for the abstracts too: 
+TDM_abs <- textmatrix(source_dir_abs, stopwords = stopwords_en, stemming = TRUE, removeNumbers = T, minGlobFreq = 2)
+#Maybe I don't need the textmatrix function... What if I can just use the lsa function with a DTM?
+abstracts_cor <- Corpus(DirSource("Test/PDF"))
+abstracts_cor <- tm_map(blogposts, removePunctuation)
+abstracts_cor <- tm_map(blogposts, content_transformer(tolower))
+abstracts_cor <- tm_map(blogposts, removeNumbers)
+abstracts_cor <- tm_map(blogposts, stripWhitespace)
+absDTM <- DocumentTermMatrix(abstracts_cor)
+#All of the above works, but then the line below throws: Error in  Ops.simple_triplet_matrix((m > 0), 1) : Not implemented.
+TDM2abs <- lw_tf(absDTM) * gw_idf(absDTM)
