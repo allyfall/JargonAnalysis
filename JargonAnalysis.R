@@ -111,6 +111,28 @@ jargon_matrix <- matrix(,nrow = length(abs1_words), ncol=4)
 ##step six: take first word from abstract bag 
 #possibility for better code: use word frequency table for abstract as well, so you don't run the same word over and over..
 
+#testing random bits of function code. This will be removed. 
+word <- abs1_words[1]
+word <- "american"
+gen_row <- which(word==generalwords)
+word_freq <- blog_freq[gen_row]/length(generalwords)
+#ok, to do this with a function, lets assume it will be applied to the vector of words with the pipe opperator. 
+#so first arg is word? 
+#function needs to make all data in row for single word. 
+#the problem is that i need to replace row i in the matrix with the word data. How do I do that?
+index <- 1 #maybe I can hack it? 
+calc_jargonness <- function(word, index){
+ #find if word is in general corpus
+  gen_row <- which(word==generalwords)
+  #if it is, get word freq, calc, save to col 2. If not assign 3. 
+  if(gen_row >= 1){
+    word_freq <- blog_freq[gen_row]/length(generalwords)
+    jargon_matrix[index,2] <- word_freq
+  }
+  else{
+    jargon_matrix[index,4] <- 3
+  }
+}
 
 
 ##LSA: latent semantic analysis: 
