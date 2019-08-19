@@ -105,34 +105,68 @@ plos_dtm <- DocumentTermMatrix(plos,
                                       tolower=TRUE,
                                       stemming = FALSE,
                                       bounds = list(global = c(2,Inf))))
+plos_words <- plos_dtm$dimnames$Terms
 plos_freq <- colSums(as.matrix(plos_dtm))
 ##step five: create an empty matrix w/ 4 columns and as many rows as words in abstract
 jargon_matrix <- matrix(,nrow = length(abs1_words), ncol=4)
 ##step six: take first word from abstract bag 
 #possibility for better code: use word frequency table for abstract as well, so you don't run the same word over and over..
 
-#testing random bits of function code. This will be removed. 
-word <- abs1_words[1]
-word <- "american"
-gen_row <- which(word==generalwords)
-word_freq <- blog_freq[gen_row]/length(generalwords)
 #ok, to do this with a function, lets assume it will be applied to the vector of words with the pipe opperator. 
 #so first arg is word? 
 #function needs to make all data in row for single word. 
 #the problem is that i need to replace row i in the matrix with the word data. How do I do that?
-index <- 1 #maybe I can hack it? 
+index <- 0 #maybe I can hack it? 
 calc_jargonness <- function(word, index){
  #find if word is in general corpus
   gen_row <- which(word==generalwords)
+  index <- index + 1
+  jargon_matrix[index,1] <- word
   #if it is, get word freq, calc, save to col 2. If not assign 3. 
   if(gen_row >= 1){
-    word_freq <- blog_freq[gen_row]/length(generalwords)
-    jargon_matrix[index,2] <- word_freq
-  }
-  else{
+    gen_freq <- blog_freq[gen_row]/length(generalwords)
+    jargon_matrix[index,2] <- gen_freq
+    gen_freq
+  } else{
     jargon_matrix[index,4] <- 3
+    jargon_matrix[index,2] <- 0
+  }
+  #now for the science corpora
+  sci_row <- which(word==plos_words)
+  if(length(sci_row)==0){
+    sci_row <- 0
+  }
+  #if in science, get word freq, save to 3, get jargon score
+  #if not, see if it was in general (is there a non-zero score in col 2?)
+  #if it was in general, give col 3+4 = 0. If in neither, all 0. 
+  if(sci_row >= 1){
+    sci_freq <- plos_freq[sci_row]/length(plos_words)
+    jargon_matrix[index,3] <- sci_freq
+    jaron_score <- log10((gen_freq/sci_freq))
+    jargon_matrix[index,4] <- jaron_score
+  } else{
+    #hmm I'm not sure this is what we want to do.
+    #this means if it isn't in general or science, everything is zero.
+    #which ranks it the same as if it was just in the general.
+    #I think we need to differentiate the two somehow.
+    if(jargon_matrix[index,2]==0){
+      jargon_matrix[index,3] <- 0
+      jargon_matrix[index,4] <- 0
+    }
+    else{
+      jargon_matrix[index,3] <- 0
+      jargon_matrix[index,4] <- 0 
+    }
   }
 }
+
+calc_jargonness(word="american",1)
+View(jargon_matrix)
+#Thoughts on how to apply this:
+#lapply or similar: a function that takes my function and applies it to a row of data
+#a loop of some sort
+#the pipe operator %>%. But I don't know how/what to start with. Jargonmatrix? Or does it have to have a product? 
+
 
 
 ##LSA: latent semantic analysis: 
@@ -157,7 +191,7 @@ text(tk2[,1], y=tk2[,2], labels=rownames(tk2), cex=.70) #This is a plot of words
 ###Hi Katie! The section below is what I've been working on/struggling with###
 ##need to do this for the abstracts and sciCorp too. 
 ##The abstracts are in as a TDM now. 
-absDTM2 <- DocumentTermMatrix(corp)
+absDTM2 <- TermDocumentMatrix(corp)
 TDM2abs2 <- lw_tf(absDTM2) * gw_idf(absDTM2) #doesn't work, same error: Error in Ops.simple_triplet_matrix((m > 0), 1) : Not implemented.
 LSAabs <- lsa(absDTM2, dims = dimcalc_share())
 as.textmatrix(LSAabs)
@@ -192,11 +226,16 @@ library(koRpus.lang.en)
 #install.koRpus.lang(lang = "en") #Think I have this on machine now, so I don't need to run line again.
 #the readability function takes .txt files. I want to look at my abstracts only, so maybe I save them as txt files...?
 readability("Test/Ab1.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/Abs2.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/Abs3.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-#need to do this for sciCorp and blogs
+readability("Test/breakup.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("Test/coral.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("Test/carbon.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("Test/entropySpecies.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("Test/gutSymbiont.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("Test/particles.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("Test/snails.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("Test/sponge.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
 #Need to convert XML into txt files, preferably automatically. This will take some research.
-
+#for 1,breakup,coral,carbon, entropy, gut, particles, snails, sponge I get scores of grade 16.26, 19.23, 18.85, 17.62, 15.63, 18.36, 8.17, 14.25, and 18.38 respectively.
 
 ##Lexical Tightness: how inter-related words are in normal vs science language.
 #is a mean of NPMI and is log2(p(a,b)/p(a)p(b))/-log2(p(a,b))
