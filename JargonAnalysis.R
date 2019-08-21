@@ -225,17 +225,20 @@ library(koRpus)
 library(koRpus.lang.en)
 #install.koRpus.lang(lang = "en") #Think I have this on machine now, so I don't need to run line again.
 #the readability function takes .txt files. I want to look at my abstracts only, so maybe I save them as txt files...?
-readability("Test/Ab1.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/breakup.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/coral.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/carbon.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/entropySpecies.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/gutSymbiont.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/particles.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/snails.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
-readability("Test/sponge.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+setwd("~/Desktop/JargonAnalysis-master/JargonAnalysis/Test/TXT")
+readability("Ab1.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("breakup.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("coral.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("carbon.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("entropySpecies.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("gutSymbiont.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("particles.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("snails.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("sponge.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+readability("dengue.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
+
 #Need to convert XML into txt files, preferably automatically. This will take some research.
-#for 1,breakup,coral,carbon, entropy, gut, particles, snails, sponge I get scores of grade 16.26, 19.23, 18.85, 17.62, 15.63, 18.36, 8.17, 14.25, and 18.38 respectively.
+#for 1,breakup,coral,carbon, entropy, gut, particles, snails, sponge, dengue I get scores of grade 16.26, 19.23, 18.85, 17.62, 15.63, 18.36, 8.17, 14.25, and 18.38, 14.47 respectively.
 
 ##Lexical Tightness: how inter-related words are in normal vs science language.
 #is a mean of NPMI and is log2(p(a,b)/p(a)p(b))/-log2(p(a,b))
