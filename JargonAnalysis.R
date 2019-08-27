@@ -238,7 +238,8 @@ readability("sponge.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tok
 readability("dengue.txt", hyphen = NULL, index = "Flesch.Kincaid", tagger = "tokenize", force.lang = "en")
 
 #Need to convert XML into txt files, preferably automatically. This will take some research.
-#for 1,breakup,coral,carbon, entropy, gut, particles, snails, sponge, dengue I get scores of grade 16.26, 19.23, 18.85, 17.62, 15.63, 18.36, 8.17, 14.25, and 18.38, 14.47 respectively.
+#for 1,breakup,coral,carbon, entropy, gut, particles, snails, sponge, dengue I get 
+#scores of grade 16.26, 19.23, 18.85, 17.62, 15.63, 18.36, 8.17, 14.25, and 18.38, 14.47 respectively.
 
 ##Lexical Tightness: how inter-related words are in normal vs science language.
 #is a mean of NPMI and is log2(p(a,b)/p(a)p(b))/-log2(p(a,b))
